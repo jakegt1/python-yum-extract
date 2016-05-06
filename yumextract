@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import re
 import argparse
 import os
 import subprocess
@@ -32,7 +33,7 @@ parser.add_argument(
 
 parser.add_argument(
     '-i686',
-    metavar='i686',
+    action='store_true',
     help='Find package for 32 bit instead of 64 bit.'
 )
 
@@ -76,6 +77,8 @@ class YumExtract():
             shell=False
         )
         downloaded_file = os.listdir(os.getcwd())[0]
+        version_pattern = re.compile('[0-9]+\.[0-9]+\.[0-9]+')
+        regex = re.search(version_pattern, downloaded_file)
         DEVNULL = open(os.devnull, 'wb')
         rpm2cpio = subprocess.Popen(
             [
@@ -93,6 +96,12 @@ class YumExtract():
         )
         rpm2cpio.wait()
         os.remove(downloaded_file)
+        os.chdir("../")
+        if(regex.group(0)):
+            os.rename(self.full_name, self.full_name+"-"+regex.group(0))
+            self.full_name = self.full_name+"-"+regex.group(0)
+        os.chdir(self.full_name)
+
 
     def move_directories(self):
         if(os.path.exists("usr")):
@@ -112,6 +121,7 @@ class YumExtract():
             self.arch = "i686"
         else:
             self.arch = "x86_64"
+        self.full_name = self.pkg+"."+self.arch
 
 
         if(self.dcs and self.location):
@@ -144,12 +154,21 @@ class YumExtract():
                 sys.exit(1)
 
         os.chdir(self.location)
-        os.makedirs(self.pkg+"."+self.arch)
-        os.chdir(self.pkg+"."+self.arch)
+        os.makedirs(self.full_name)
+        os.chdir(self.full_name)
 
         self.download_and_extract()
         self.move_directories()
 
+        if(self.dcs):
+            os.chdir("/var/tmp/dcs-get/")
+            subprocess.call(
+                [
+                    "dcs-get",
+                    "g",
+                    self.full_name
+                ]
+            )
 
 
 YumExtract(args)
