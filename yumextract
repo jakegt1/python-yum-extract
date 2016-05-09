@@ -20,6 +20,12 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '-local',
+    action='store_true',
+    help='optional: Indicates installation into ~/.local/ .'
+)
+
+parser.add_argument(
     '-dcs',
     action='store_true',
     help='optional: Indicates installation for DCS-GET.'
@@ -63,7 +69,8 @@ class YumExtract():
         search_proc = search_proc[2:]
         package_line = self.pkg + "." + self.arch
         for line in search_proc:
-            if(package_line in line):
+            if(package_line in line and package_line[0] == line[0]):
+                print(line)
                 exists = True
                 break
         return exists
@@ -102,6 +109,32 @@ class YumExtract():
             self.full_name = self.full_name+"-"+regex.group(0)
         os.chdir(self.full_name)
 
+    def copy_into_directory(self):
+        files = os.listdir(os.getcwd())
+        for file in files:
+            os.chdir(file)
+            files_here = os.listdir(os.getcwd())
+            for lower_file in files_here:
+                local_path = os.path.expanduser('~/.local/')
+                if(os.path.exists(local_path+file+"/"+lower_file)):
+                    self.copy_into_directory_recursive(
+                        os.getcwd()+"/"+lower_file+"/",
+                        local_path+file+"/"+lower_file+"/"
+                    )
+                else:
+                    shutil.move(lower_file, local_path+file)
+            os.chdir("../")
+
+    def copy_into_directory_recursive(self, path, local_path):
+        files = os.listdir(path)
+        for file in files:
+            print(local_path)
+            if(os.path.isdir(local_path+file)):
+                self.copy_into_directory_recursive(
+                    path+file+"/",
+                    local_path+file+"/")
+            else:
+                shutil.move(path+file, local_path)
 
     def move_directories(self):
         if(os.path.exists("usr")):
@@ -113,6 +146,7 @@ class YumExtract():
             shutil.rmtree("usr")
 
     def __init__(self, args):
+        self.local = args.local
         self.dcs = args.dcs
         self.pkg_name = args.name
         self.pkg = args.package
@@ -131,8 +165,23 @@ class YumExtract():
                 print("DCS option used with location option, exiting")
                 sys.exit(1)
 
+        if(self.local and self.dcs):
+            try:
+                raise NameError('Bad use of local and dcs options')
+            except NameError:
+                print("Local and dcs options used together, exiting")
+                sys.exit(1)
+
+        if(self.local and self.location):
+            try:
+                raise NameError('Bad use of local option')
+            except NameError:
+                print("Local option used with location option, exiting")
+
         if(self.dcs):
             self.location = "/var/tmp/dcs-get/"
+        elif(self.local):
+            self.location = os.path.expanduser('~/.local/')
         elif(not self.location):
             self.location = os.getcwd()
 
@@ -170,5 +219,7 @@ class YumExtract():
                 ]
             )
 
+        if(self.local):
+            self.copy_into_directory()
 
 YumExtract(args)
