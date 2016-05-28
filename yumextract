@@ -141,7 +141,13 @@ class YumExtract():
             os.chdir("usr")
             files = os.listdir(os.getcwd())
             for file in files:
-                shutil.copytree(file, "../"+file)
+                if(os.path.isdir(file)):
+                    self.copy_into_directory_recursive(
+                        file+"/",
+                        "../"+file
+                    )
+                else:
+                    shutil.copytree(file, "../"+file)
             os.chdir("../")
             shutil.rmtree("usr")
 
