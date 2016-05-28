@@ -104,7 +104,7 @@ class YumExtract():
         rpm2cpio.wait()
         os.remove(downloaded_file)
         os.chdir("../")
-        if(regex.group(0)):
+        if(regex):
             os.rename(self.full_name, self.full_name+"-"+regex.group(0))
             self.full_name = self.full_name+"-"+regex.group(0)
         os.chdir(self.full_name)
@@ -122,7 +122,7 @@ class YumExtract():
                         local_path+file+"/"+lower_file+"/"
                     )
                 else:
-                    shutil.move(lower_file, local_path+file)
+                    shutil.copytree(lower_file, local_path+file)
             os.chdir("../")
 
     def copy_into_directory_recursive(self, path, local_path):
@@ -134,7 +134,7 @@ class YumExtract():
                     path+file+"/",
                     local_path+file+"/")
             else:
-                shutil.move(path+file, local_path)
+                shutil.copytree(path+file, local_path)
 
     def move_directories(self):
         if(os.path.exists("usr")):
@@ -142,9 +142,13 @@ class YumExtract():
             files = os.listdir(os.getcwd())
             for file in files:
                 if(os.path.isdir(file)):
-                    self.copy_into_directory_recursive(
-                        file+"/",
-                        "../"+file
+                    subprocess.call(
+                        [
+                            "cp",
+                            "-R",
+                            file,
+                            "../"+file
+                        ]
                     )
                 else:
                     shutil.copytree(file, "../"+file)
