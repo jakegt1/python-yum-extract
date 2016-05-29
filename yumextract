@@ -74,6 +74,15 @@ class YumExtract():
                 break
         return exists
 
+    def check_package_installed(self):
+        exists = False
+        files = os.listdir(os.getcwd())
+        for file in files:
+            if(self.full_name in file):
+                exists = True
+                break
+        return exists
+
     def download_and_extract(self):
         download_info = subprocess.check_output(
             [
@@ -202,6 +211,14 @@ class YumExtract():
                 sys.exit(1)
 
         os.chdir(self.location)
+
+        if(self.check_package_installed()):
+            try:
+                raise NameError('Package is already installed')
+            except NameError:
+                print("Package is found in directory, likely installed.")
+                sys.exit(1)
+
         os.makedirs(self.full_name)
         os.chdir(self.full_name)
 
