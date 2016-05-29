@@ -62,7 +62,7 @@ class YumExtract():
                 "search",
                 self.pkg
             ],
-            shell=False
+            shell=False,
         )
         search_proc = search_proc.decode("utf-8")
         search_proc = search_proc.split("\n")
@@ -70,7 +70,6 @@ class YumExtract():
         package_line = self.pkg + "." + self.arch
         for line in search_proc:
             if(package_line in line and package_line[0] == line[0]):
-                print(line)
                 exists = True
                 break
         return exists
@@ -80,8 +79,7 @@ class YumExtract():
             [
                 "yumdownloader",
                 self.pkg + "." + self.arch
-            ],
-            shell=False
+            ]
         )
         downloaded_file = os.listdir(os.getcwd())[0]
         version_pattern = re.compile('[0-9]+\.[0-9]+\.[0-9]+')
@@ -100,6 +98,8 @@ class YumExtract():
                 "-idmv"
             ],
             stdin=rpm2cpio.stdout,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT
         )
         rpm2cpio.wait()
         os.remove(downloaded_file)
@@ -111,30 +111,19 @@ class YumExtract():
 
     def copy_into_directory(self):
         files = os.listdir(os.getcwd())
+        local_path = os.path.expanduser('~/.local/')
         for file in files:
-            os.chdir(file)
-            files_here = os.listdir(os.getcwd())
-            for lower_file in files_here:
-                local_path = os.path.expanduser('~/.local/')
-                if(os.path.exists(local_path+file+"/"+lower_file)):
-                    self.copy_into_directory_recursive(
-                        os.getcwd()+"/"+lower_file+"/",
-                        local_path+file+"/"+lower_file+"/"
-                    )
-                else:
-                    shutil.copytree(lower_file, local_path+file)
-            os.chdir("../")
-
-    def copy_into_directory_recursive(self, path, local_path):
-        files = os.listdir(path)
-        for file in files:
-            print(local_path)
-            if(os.path.isdir(local_path+file)):
-                self.copy_into_directory_recursive(
-                    path+file+"/",
-                    local_path+file+"/")
+            if(os.path.isdir(file)):
+                subprocess.call(
+                    [
+                        "cp",
+                        "-R",
+                        file,
+                        local_path
+                    ]
+                )
             else:
-                shutil.copytree(path+file, local_path)
+                shutil.copytree(file, local_path)
 
     def move_directories(self):
         if(os.path.exists("usr")):
@@ -216,20 +205,30 @@ class YumExtract():
         os.makedirs(self.full_name)
         os.chdir(self.full_name)
 
+        print("Downloading "+self.full_name)
         self.download_and_extract()
+        print("Installing to correct directory..")
         self.move_directories()
 
         if(self.dcs):
+            print("Generating links for dcs-get..")
             os.chdir("/var/tmp/dcs-get/")
             subprocess.call(
                 [
                     "dcs-get",
                     "g",
                     self.full_name
-                ]
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT
             )
+            print("Finished generating links for dcs-get.")
 
         if(self.local):
+            print("Copying files into .local..")
             self.copy_into_directory()
+            print("Files copied into .local.")
+
+        print("Completed installation of "+self.full_name)
 
 YumExtract(args)
