@@ -8,7 +8,7 @@ The purpose of this is for local installs of packages available on yum without r
 * yum
 * python3 (>3.3)
 
-The program was tested on RHEL 7 - not sure how it works on other distributions yet.
+Program has been tested on RHEL 7 & CentOS 7 - both working fine.
 
 ##Usage
 
