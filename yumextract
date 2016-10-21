@@ -43,6 +43,12 @@ parser.add_argument(
     help='Find package for 32 bit instead of 64 bit.'
 )
 
+paser.add_argument(
+    '-noarch',
+    action='store_true',
+    help='HOTFIX: download noarch package'
+)
+
 parser.add_argument(
     '--name',
     metavar='pkg_name',
@@ -161,6 +167,8 @@ class YumExtract():
         self.location = args.location
         if(args.i686):
             self.arch = "i686"
+        elif(args.noarch):
+            self.arch = "noarch"
         else:
             self.arch = "x86_64"
         self.full_name = self.pkg+"."+self.arch
