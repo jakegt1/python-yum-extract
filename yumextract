@@ -43,7 +43,7 @@ parser.add_argument(
     help='Find package for 32 bit instead of 64 bit.'
 )
 
-paser.add_argument(
+parser.add_argument(
     '-noarch',
     action='store_true',
     help='HOTFIX: download noarch package'
